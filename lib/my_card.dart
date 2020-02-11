@@ -20,7 +20,9 @@ class MyCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: <Widget>[
           ListTile(
-            leading: Icon(Icons.account_circle, color: Colors.amber),
+            leading: Image.network(
+              'https://lh3.googleusercontent.com/proxy/FQukmH_3dB9dhlBXQG8GfsXhkHBk8tiCr_Vwr3oc_QZMKH6PbN8zc34lAMN5kvGuKnpb5NfFId0aNH4Z9SRT2CKxDYlSAp694EwZjpmYFa-7frDLtBxkJ-2Lc9M',
+            ),
             title: Text("$title"),
             subtitle: Text("$text"),
             //trailing: Icon(Icons.delete,color: Colors.red,),
