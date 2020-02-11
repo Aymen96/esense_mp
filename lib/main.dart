@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import './my_card.dart';
 import './text.dart';
 
-var data;
 var articles;
 
 void main() async {
