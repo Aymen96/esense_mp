@@ -47,11 +47,28 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _reading = false;
   bool _inArticle = false;
   var _controller = ScrollController(initialScrollOffset: 0.0);
+  List<String> _marked_articles = new List<String>();
+  String _current_opened;
 
-  void onOpenArticle() {
+  void OnMark(String title) {
+    _marked_articles.add(title);
+    setState(() {
+      _marked_articles = _marked_articles;
+    });
+  }
+
+  void onDismark(String title) {
+    _marked_articles.remove(title);
+    setState(() {
+      _marked_articles = _marked_articles;
+    });
+  }
+
+  void onOpenArticle(String current) {
     setState(() {
       _inArticle = true;
       _reading = false;
+      _current_opened = current;
     });
   }
 
@@ -88,6 +105,9 @@ class _MyHomePageState extends State<MyHomePage> {
             title: el['abstract'],
             text: el['snippet'],
             onOpen: onOpenArticle,
+            onMark: OnMark,
+            onDismark: onDismark,
+            mark: _marked_articles.contains(el['abstract']),
           )));
     }
     return listItems;
