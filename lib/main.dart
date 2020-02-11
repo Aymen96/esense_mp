@@ -1,9 +1,9 @@
-import 'dart:io';
 import 'dart:convert';
 import 'package:http/http.dart';
 import 'package:flutter/material.dart';
 import './my_card.dart';
 import './text.dart';
+import './article.dart';
 
 var articles;
 
@@ -47,20 +47,20 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _reading = false;
   bool _inArticle = false;
   var _controller = ScrollController(initialScrollOffset: 0.0);
-  List<String> _marked_articles = new List<String>();
+  List<String> _markedArticles = new List<String>();
   String _current_opened;
 
   void OnMark(String title) {
-    _marked_articles.add(title);
+    _markedArticles.add(title);
     setState(() {
-      _marked_articles = _marked_articles;
+      _markedArticles = _markedArticles;
     });
   }
 
   void onDismark(String title) {
-    _marked_articles.remove(title);
+    _markedArticles.remove(title);
     setState(() {
-      _marked_articles = _marked_articles;
+      _markedArticles = _markedArticles;
     });
   }
 
@@ -107,7 +107,7 @@ class _MyHomePageState extends State<MyHomePage> {
             onOpen: onOpenArticle,
             onMark: OnMark,
             onDismark: onDismark,
-            mark: _marked_articles.contains(el['abstract']),
+            mark: _markedArticles.contains(el['abstract']),
           )));
     }
     return listItems;
@@ -145,7 +145,7 @@ class _MyHomePageState extends State<MyHomePage> {
               children: getList(),
             )
           : SingleChildScrollView(
-              child: getArticleView(),
+              child: MyArticle(article: articles[0]),
               controller: _controller,
             ),
       floatingActionButton: _inArticle
