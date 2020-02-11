@@ -8,9 +8,11 @@ class Consts {
 }
 
 class CustomDialog extends StatelessWidget {
-  final String title, description, buttonText;
+  final String title, description, buttonText, caller, buttonLabel;
   final Image image;
   final Function(VoidCallback) handleAction;
+  final bool clicked;
+  final VoidCallback onClick;
 
   CustomDialog({
     this.title,
@@ -18,6 +20,10 @@ class CustomDialog extends StatelessWidget {
     this.buttonText,
     this.image,
     this.handleAction,
+    this.caller,
+    this.onClick,
+    this.clicked,
+    this.buttonLabel,
   });
 
   dialogContent(BuildContext context) {
@@ -61,25 +67,21 @@ class CustomDialog extends StatelessWidget {
                   fontSize: 16.0,
                 ),
               ),
-              FlatButton(
-                child: Text(
-                  "Connect",
-                  style: TextStyle(color: Colors.green),
-                ),
-                onPressed: () {
-                  handleAction(() => {Navigator.of(context).pop()});
-                },
-              ),
+              !clicked || caller != 'calibrator'
+                  ? buttonLabel == null
+                      ? SizedBox.shrink()
+                      : FlatButton(
+                          child: Text(
+                            buttonLabel,
+                            style: TextStyle(color: Colors.green),
+                          ),
+                          onPressed: () {
+                            onClick();
+                            handleAction(() => {Navigator.of(context).pop()});
+                          },
+                        )
+                  : Text('Hold still...'),
               SizedBox(height: 24.0),
-              Align(
-                alignment: Alignment.bottomRight,
-                child: FlatButton(
-                  onPressed: () {
-                    Navigator.of(context).pop(); // To close the dialog
-                  },
-                  child: Text(buttonText),
-                ),
-              ),
             ],
           ),
         ),

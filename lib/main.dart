@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:http/http.dart';
 import 'package:flutter/material.dart';
 import './my_card.dart';
@@ -67,6 +68,8 @@ class _MyHomePageState extends State<MyHomePage> {
   String _title;
   String _message;
   Function(VoidCallback) _handleAction;
+  String _modalCaller = 'other';
+  String _buttonLabel = 'connect';
 
   // User Interaction with App
   void onMark(String title) {
@@ -129,6 +132,7 @@ class _MyHomePageState extends State<MyHomePage> {
           case ConnectionType.disconnected:
             _deviceStatus = 'disconnected';
             _deviceConnected = false;
+            alertConnectionLoss();
 
             break;
           case ConnectionType.device_found:
@@ -207,17 +211,42 @@ class _MyHomePageState extends State<MyHomePage> {
       _title = 'Calibrate';
       _message = 'Please hold your head still for 5 seconds';
       _handleAction = startCalibration;
+      _modalCaller = 'calibrator';
+      _buttonLabel = 'Calibrate';
     });
     alertUser();
   }
 
   void startCalibration(VoidCallback callback) {
-    callback();
+    new Timer(const Duration(seconds: 5), () {
+      callback();
+      setState(() {
+        _title = 'Enjoy';
+        _message = 'Head movement will scroll articles up and down.';
+        _handleAction = (VoidCallback callback) {
+          callback();
+        };
+        _modalCaller = 'other';
+        _buttonLabel = null;
+      });
+      alertUser();
+    });
   }
 
   void makeConnection(VoidCallback callback) {
     _connectToESense();
     callback();
+  }
+
+  void alertConnectionLoss() {
+    setState(() {
+      _title = 'Connection lost';
+      _message =
+          'Connection to the ${eSenseName} lost. Please make sure they are on and try a new connection.';
+      _handleAction = makeConnection;
+      _buttonLabel = 'connect';
+    });
+    alertUser();
   }
 
   // Scroll actions on head movement event listened
@@ -265,14 +294,26 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void alertUser() {
     showDialog(
-      context: context,
-      builder: (BuildContext context) => CustomDialog(
-        title: _title,
-        description: _message,
-        handleAction: _handleAction,
-        buttonText: "skip",
-      ),
-    );
+        context: context,
+        builder: (context) {
+          bool _clicked = false;
+          return StatefulBuilder(
+            builder: (BuildContext context, setState) {
+              return CustomDialog(
+                  title: _title,
+                  description: _message,
+                  handleAction: _handleAction,
+                  caller: _modalCaller,
+                  onClick: () {
+                    setState(() {
+                      _clicked = !_clicked;
+                    });
+                  },
+                  clicked: _clicked,
+                  buttonLabel: _buttonLabel);
+            },
+          );
+        });
   }
 
   @override
