@@ -64,6 +64,12 @@ class _MyHomePageState extends State<MyHomePage> {
   String eSenseName = 'eSense-0264';
   bool _deviceConnected = false;
 
+  // Dialog modal data
+  Icon _icon;
+  String _title;
+  String _message;
+  VoidCallback _handleAction;
+
   void onMark(String title) {
     _markedArticles.add(title);
     setState(() {
@@ -94,6 +100,7 @@ class _MyHomePageState extends State<MyHomePage> {
           case ConnectionType.connected:
             _deviceStatus = 'connected';
             _deviceConnected = true;
+            askForCalibration();
             break;
           case ConnectionType.unknown:
             _deviceStatus = 'unknown';
@@ -109,7 +116,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
             break;
           case ConnectionType.device_not_found:
-            _deviceStatus = 'device_not_found'; 
+            _deviceStatus = 'device_not_found';
             _deviceConnected = false;
 
             break;
@@ -240,17 +247,34 @@ class _MyHomePageState extends State<MyHomePage> {
     showDialog(
       context: context,
       builder: (BuildContext context) => CustomDialog(
-        title: "Make connection",
-        description: "Please connect to your eSense Earables.",
-        onConnect: _connectToESense,
+        title: _title,
+        description: _message,
+        onConnect: _handleAction,
         buttonText: "skip",
       ),
     );
   }
 
+  void askForCalibration() {
+    setState(() {
+      _title = 'Calibrate';
+      _message = 'Please hold your head still for 5 seconds';
+      _handleAction = startCalibration;
+    });
+    alertUser();
+  }
+
+  void startCalibration() {}
+
   @override
   void initState() {
     super.initState();
+    setState(() {
+      _title = "Make connection";
+      _message = "Please connect to your eSense Earables.";
+      _icon = Icon(Icons.audiotrack);
+      _handleAction = _connectToESense;
+    });
     WidgetsBinding.instance.addPostFrameCallback((_) => alertUser());
   }
 

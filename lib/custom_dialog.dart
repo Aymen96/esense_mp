@@ -66,7 +66,10 @@ class CustomDialog extends StatelessWidget {
                   "Connect",
                   style: TextStyle(color: Colors.green),
                 ),
-                onPressed: onConnect,
+                onPressed: () {
+                  onConnect();
+                  Navigator.of(context).pop();
+                },
               ),
               SizedBox(height: 24.0),
               Align(
