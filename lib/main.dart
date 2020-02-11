@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:http/http.dart';
 import 'package:flutter/material.dart';
 import './my_card.dart';
-import './text.dart';
 import './article.dart';
 
 var articles;
@@ -25,11 +24,11 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter Demo',
+      title: 'News reader',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
+        primarySwatch: Colors.green,
       ),
-      home: MyHomePage(title: 'Flutter Demo Home Page'),
+      home: MyHomePage(title: 'Esense Reading Experience'),
     );
   }
 }
@@ -50,7 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
   List<String> _markedArticles = new List<String>();
   int _currentOpened = 0;
 
-  void OnMark(String title) {
+  void onMark(String title) {
     _markedArticles.add(title);
     setState(() {
       _markedArticles = _markedArticles;
@@ -110,16 +109,12 @@ class _MyHomePageState extends State<MyHomePage> {
             title: el['abstract'],
             text: el['snippet'],
             onOpen: onOpenArticle,
-            onMark: OnMark,
+            onMark: onMark,
             onDismark: onDismark,
             mark: _markedArticles.contains(el['abstract']),
           )));
     }
     return listItems;
-  }
-
-  Widget getArticleView() {
-    return Text(long_text + long_text + long_text);
   }
 
   void goBackToList() {
@@ -147,7 +142,38 @@ class _MyHomePageState extends State<MyHomePage> {
       body: !_inArticle
           ? ListView(
               padding: const EdgeInsets.all(8),
-              children: getList(),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: Column(
+                    children: <Widget>[
+                      Text(
+                        'Earables\' status: connected. Battery level: 30%',
+                        style: TextStyle(fontSize: 17),
+                      ),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  child: Divider(
+                    height: 2.0,
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Column(
+                    children: <Widget>[
+                      Text(
+                        'Daily Reads',
+                        style: Theme.of(context).textTheme.headline,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                ...getList()
+              ],
             )
           : SingleChildScrollView(
               child: MyArticle(article: articles[_currentOpened]),

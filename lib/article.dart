@@ -15,7 +15,7 @@ var text = Padding(
   child: Column(
     children: <Widget>[
       Text(
-        long_text,
+        longText,
         style: TextStyle(fontSize: 17),
       ),
     ],
