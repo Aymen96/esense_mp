@@ -91,6 +91,7 @@ class CustomDialog extends StatelessWidget {
           child: CircleAvatar(
             backgroundColor: Colors.green,
             radius: Consts.avatarRadius,
+            child: Icon(Icons.error_outline, size: 90.0, color: Colors.white),
           ),
         ),
       ],

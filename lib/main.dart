@@ -151,8 +151,10 @@ class _MyHomePageState extends State<MyHomePage> {
     _deviceConnected = await ESenseManager.connect(eSenseName);
   }
 
+  StreamSubscription sub;
+
   void _listenToESenseEvents() async {
-    ESenseManager.eSenseEvents.listen((event) {
+    sub = ESenseManager.eSenseEvents.listen((event) {
       print('ESENSE event: $event');
 
       setState(() {
@@ -206,6 +208,34 @@ class _MyHomePageState extends State<MyHomePage> {
         () async => await ESenseManager.getSensorConfig());
   }
 
+  StreamSubscription subscription;
+
+  void _startListenToSensorEvents() async {
+    // subscribe to sensor event from the eSense device
+    subscription = ESenseManager.sensorEvents.listen((event) {
+      print('SENSOR event: $event');
+      setState(() {
+        _event = event.toString();
+      });
+    });
+    setState(() {
+      sampling = true;
+    });
+  }
+
+  void _pauseListenToSensorEvents() async {
+    subscription.cancel();
+    setState(() {
+      sampling = false;
+    });
+  }
+
+  void dispose() {
+    if (sampling) _pauseListenToSensorEvents();
+    ESenseManager.disconnect();
+    super.dispose();
+  }
+
   void askForCalibration() {
     setState(() {
       _title = 'Calibrate';
@@ -243,9 +273,15 @@ class _MyHomePageState extends State<MyHomePage> {
       _title = 'Connection lost';
       _message =
           'Connection to the ${eSenseName} lost. Please make sure they are on and try a new connection.';
-      _handleAction = makeConnection;
+      _handleAction = (VoidCallback callback) async {
+        _deviceConnected = await ESenseManager.connect(eSenseName);
+        callback();
+      };
       _buttonLabel = 'connect';
+      _deviceConnected = false;
     });
+    if (sampling) _pauseListenToSensorEvents();
+    ESenseManager.disconnect();
     alertUser();
   }
 
@@ -344,6 +380,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 ? IconButton(
                     icon: Icon(Icons.audiotrack, color: Colors.white),
                     onPressed: alertUser)
+                : SizedBox.shrink(),
+            _deviceConnected
+                ? IconButton(
+                    icon: Icon(Icons.offline_pin, color: Colors.white),
+                    onPressed: () {
+                      sub.cancel();
+                      ESenseManager.disconnect();
+                    })
                 : SizedBox.shrink(),
           ],
         ),
