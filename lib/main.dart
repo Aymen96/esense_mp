@@ -48,7 +48,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _inArticle = false;
   var _controller = ScrollController(initialScrollOffset: 0.0);
   List<String> _markedArticles = new List<String>();
-  String _current_opened;
+  int _currentOpened = 0;
 
   void OnMark(String title) {
     _markedArticles.add(title);
@@ -65,10 +65,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void onOpenArticle(String current) {
+    int counter = 0;
+    while (
+        counter < articles.length && articles[counter]['abstract'] != current) {
+      counter++;
+    }
     setState(() {
       _inArticle = true;
       _reading = false;
-      _current_opened = current;
+      _currentOpened = counter;
     });
   }
 
@@ -145,7 +150,7 @@ class _MyHomePageState extends State<MyHomePage> {
               children: getList(),
             )
           : SingleChildScrollView(
-              child: MyArticle(article: articles[0]),
+              child: MyArticle(article: articles[_currentOpened]),
               controller: _controller,
             ),
       floatingActionButton: _inArticle
