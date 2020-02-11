@@ -10,14 +10,14 @@ class Consts {
 class CustomDialog extends StatelessWidget {
   final String title, description, buttonText;
   final Image image;
-  final VoidCallback onConnect;
+  final Function(VoidCallback) handleAction;
 
   CustomDialog({
     this.title,
     this.description,
     this.buttonText,
     this.image,
-    this.onConnect,
+    this.handleAction,
   });
 
   dialogContent(BuildContext context) {
@@ -67,8 +67,7 @@ class CustomDialog extends StatelessWidget {
                   style: TextStyle(color: Colors.green),
                 ),
                 onPressed: () {
-                  onConnect();
-                  Navigator.of(context).pop();
+                  handleAction(() => {Navigator.of(context).pop()});
                 },
               ),
               SizedBox(height: 24.0),

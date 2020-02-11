@@ -10,16 +10,15 @@ import './custom_dialog.dart';
 var articles;
 
 void main() async {
-  // make GET request
+  // Get articles for the chosen news API
   String url =
       'https://api.nytimes.com/svc/search/v2/articlesearch.json?q=internet+of+things&api-key=U1khtqk3q8mHmO1FOJD4twU3eoiGuLUJ';
   Response response = await get(url);
   if (response.statusCode == 200) {
     String body = response.body;
-    var docs = json.decode(body)['response']['docs'];
-    articles = docs;
+    articles = json.decode(body)['response']['docs'];
   }
-
+  // render app
   runApp(MyApp());
 }
 
@@ -27,7 +26,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'News reader',
+      title: 'Your Daily Reads',
       theme: ThemeData(
         primarySwatch: Colors.green,
       ),
@@ -38,7 +37,6 @@ class MyApp extends StatelessWidget {
 
 class MyHomePage extends StatefulWidget {
   MyHomePage({Key key, this.title}) : super(key: key);
-
   final String title;
 
   @override
@@ -68,8 +66,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Icon _icon;
   String _title;
   String _message;
-  VoidCallback _handleAction;
+  Function(VoidCallback) _handleAction;
 
+  // User Interaction with App
   void onMark(String title) {
     _markedArticles.add(title);
     setState(() {
@@ -84,6 +83,27 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  void onOpenArticle(String current) {
+    int counter = 0;
+    while (
+        counter < articles.length && articles[counter]['abstract'] != current) {
+      counter++;
+    }
+    setState(() {
+      _inArticle = true;
+      _reading = false;
+      _currentOpened = counter;
+    });
+  }
+
+  void goBackToList() {
+    setState(() {
+      _inArticle = false;
+      _reading = false;
+    });
+  }
+
+  // eSense earables urils
   Future<void> _connectToESense() async {
     // if you want to get the connection events when connecting, set up the listener BEFORE connecting...
     ESenseManager.connectionEvents.listen((event) {
@@ -182,19 +202,25 @@ class _MyHomePageState extends State<MyHomePage> {
         () async => await ESenseManager.getSensorConfig());
   }
 
-  void onOpenArticle(String current) {
-    int counter = 0;
-    while (
-        counter < articles.length && articles[counter]['abstract'] != current) {
-      counter++;
-    }
+  void askForCalibration() {
     setState(() {
-      _inArticle = true;
-      _reading = false;
-      _currentOpened = counter;
+      _title = 'Calibrate';
+      _message = 'Please hold your head still for 5 seconds';
+      _handleAction = startCalibration;
     });
+    alertUser();
   }
 
+  void startCalibration(VoidCallback callback) {
+    callback();
+  }
+
+  void makeConnection(VoidCallback callback) {
+    _connectToESense();
+    callback();
+  }
+
+  // Scroll actions on head movement event listened
   void scrollDown() {
     if (_inArticle && _reading) {
       double offset = _controller.offset + 500.0;
@@ -221,6 +247,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  // rendeing utils
   List<Widget> getList() {
     List<Widget> listItems = new List<Widget>();
     if (articles != null) {
@@ -236,35 +263,17 @@ class _MyHomePageState extends State<MyHomePage> {
     return listItems;
   }
 
-  void goBackToList() {
-    setState(() {
-      _inArticle = false;
-      _reading = false;
-    });
-  }
-
   void alertUser() {
     showDialog(
       context: context,
       builder: (BuildContext context) => CustomDialog(
         title: _title,
         description: _message,
-        onConnect: _handleAction,
+        handleAction: _handleAction,
         buttonText: "skip",
       ),
     );
   }
-
-  void askForCalibration() {
-    setState(() {
-      _title = 'Calibrate';
-      _message = 'Please hold your head still for 5 seconds';
-      _handleAction = startCalibration;
-    });
-    alertUser();
-  }
-
-  void startCalibration() {}
 
   @override
   void initState() {
@@ -273,7 +282,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _title = "Make connection";
       _message = "Please connect to your eSense Earables.";
       _icon = Icon(Icons.audiotrack);
-      _handleAction = _connectToESense;
+      _handleAction = makeConnection;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => alertUser());
   }
