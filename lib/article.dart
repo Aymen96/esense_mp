@@ -101,8 +101,7 @@ class _MyArticleState extends State<MyArticle> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: <Widget>[
                 CircleAvatar(
-                  backgroundImage: NetworkImage(
-                      "https://lh3.googleusercontent.com/proxy/FQukmH_3dB9dhlBXQG8GfsXhkHBk8tiCr_Vwr3oc_QZMKH6PbN8zc34lAMN5kvGuKnpb5NfFId0aNH4Z9SRT2CKxDYlSAp694EwZjpmYFa-7frDLtBxkJ-2Lc9M"),
+                  backgroundImage: AssetImage('assets/nytimes.jpg'),
                 ),
                 Column(
                   children: <Widget>[

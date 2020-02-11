@@ -70,9 +70,7 @@ class _MyCardState extends State<MyCardStateful> {
             mainAxisSize: MainAxisSize.min,
             children: <Widget>[
               ListTile(
-                leading: Image.network(
-                  'https://lh3.googleusercontent.com/proxy/FQukmH_3dB9dhlBXQG8GfsXhkHBk8tiCr_Vwr3oc_QZMKH6PbN8zc34lAMN5kvGuKnpb5NfFId0aNH4Z9SRT2CKxDYlSAp694EwZjpmYFa-7frDLtBxkJ-2Lc9M',
-                ),
+                leading: Image.asset('assets/nytimes.jpg'),
                 title: Text(widget.title),
                 subtitle: !widget.mark ? Text(widget.text) : SizedBox.shrink(),
                 //trailing: Icon(Icons.delete,color: Colors.red,),
