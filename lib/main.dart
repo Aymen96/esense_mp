@@ -79,8 +79,6 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   Future<void> _connectToESense() async {
-    bool con = false;
-
     // if you want to get the connection events when connecting, set up the listener BEFORE connecting...
     ESenseManager.connectionEvents.listen((event) {
       print('CONNECTION event: $event');
@@ -111,7 +109,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
             break;
           case ConnectionType.device_not_found:
-            _deviceStatus = 'device_not_found';
+            _deviceStatus = 'device_not_found'; 
             _deviceConnected = false;
 
             break;
@@ -119,14 +117,7 @@ class _MyHomePageState extends State<MyHomePage> {
       });
     });
 
-    con = await ESenseManager.connect(eSenseName);
-
-    setState(() {
-      print(con);
-      _deviceStatus = con ? 'connecting' : 'connection failed';
-
-      print(con);
-    });
+    _deviceConnected = await ESenseManager.connect(eSenseName);
   }
 
   void _listenToESenseEvents() async {
