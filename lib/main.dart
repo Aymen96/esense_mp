@@ -390,7 +390,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       sub.cancel();
                       ESenseManager.disconnect();
                     })
-                : SizedBox.shrink(),
+                : SizedBox.shrink(), // empty widget
           ],
         ),
       ),
@@ -439,7 +439,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: _startReading,
               tooltip: 'Start Reading',
               child: Icon(_reading ? Icons.chrome_reader_mode : Icons.book))
-          : Text(''),
+          : SizedBox.shrink(),
     );
   }
 }
