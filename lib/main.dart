@@ -1,12 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
+
+import 'package:esense_flutter/esense.dart';
 import 'package:http/http.dart';
 import 'package:flutter/material.dart';
-import './my_card.dart';
-import './article.dart';
-import 'package:esense_flutter/esense.dart';
-import './custom_dialog.dart';
+
+import './widgets/my_card.dart';
+import './widgets/my_article.dart';
+import './widgets/my_dialog.dart';
 
 var articles;
 

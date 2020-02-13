@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import './text.dart';
+import '../data/text.dart';
 
 class MyArticle extends StatefulWidget {
   final Map<String, dynamic> article;
