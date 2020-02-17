@@ -91,7 +91,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void onOpenArticle(String current) {
     int counter = 0;
     while (
-        counter < articles.length && articles[counter]['abstract'] != current) {
+    counter < articles.length && articles[counter]['abstract'] != current) {
       counter++;
     }
     setState(() {
@@ -144,6 +144,7 @@ class _MyHomePageState extends State<MyHomePage> {
           case ConnectionType.device_not_found:
             _deviceStatus = 'device_not_found';
             _deviceConnected = false;
+            retryConnection();
 
             break;
         }
@@ -173,14 +174,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 : 'not pressed';
             break;
           case AccelerometerOffsetRead:
-            // TODO
+          // TODO
 
             break;
           case AdvertisementAndConnectionIntervalRead:
-            // TODO
+          // TODO
             break;
           case SensorConfigRead:
-            // TODO
+          // TODO
 
             break;
         }
@@ -193,7 +194,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void _getESenseProperties() async {
     // get the battery level every 10 secs
     Timer.periodic(Duration(seconds: 10),
-        (timer) async => await ESenseManager.getBatteryVoltage());
+            (timer) async => await ESenseManager.getBatteryVoltage());
 
     // wait 2, 3, 4, 5, ... secs before getting the name, offset, etc.
     // it seems like the eSense BTLE interface does NOT like to get called
@@ -201,13 +202,13 @@ class _MyHomePageState extends State<MyHomePage> {
     Timer(
         Duration(seconds: 2), () async => await ESenseManager.getDeviceName());
     Timer(Duration(seconds: 3),
-        () async => await ESenseManager.getAccelerometerOffset());
+            () async => await ESenseManager.getAccelerometerOffset());
     Timer(
         Duration(seconds: 4),
-        () async =>
-            await ESenseManager.getAdvertisementAndConnectionInterval());
+            () async =>
+        await ESenseManager.getAdvertisementAndConnectionInterval());
     Timer(Duration(seconds: 5),
-        () async => await ESenseManager.getSensorConfig());
+            () async => await ESenseManager.getSensorConfig());
   }
 
   StreamSubscription subscription;
@@ -241,7 +242,8 @@ class _MyHomePageState extends State<MyHomePage> {
   void askForCalibration() {
     setState(() {
       _title = 'Calibrate';
-      _message = 'Please hold your head still for 5 seconds';
+      _message =
+      'Please hold your head still and in reading position for 5 seconds';
       _handleAction = startCalibration;
       _modalCaller = 'calibrator';
       _buttonLabel = 'Calibrate';
@@ -270,11 +272,27 @@ class _MyHomePageState extends State<MyHomePage> {
     callback();
   }
 
+  retryConnection() {
+    setState(() {
+      _title = 'Device not found';
+      _message = 'Make sure your earables are on and retry again.';
+      _handleAction = (VoidCallback callback) async {
+        _deviceConnected = await ESenseManager.connect(eSenseName);
+        callback();
+      };
+      _buttonLabel = 'Retry';
+      _deviceConnected = false;
+    });
+    if (sampling) _pauseListenToSensorEvents();
+    ESenseManager.disconnect();
+    alertUser();
+  }
+
   void alertConnectionLoss() {
     setState(() {
       _title = 'Connection lost';
       _message =
-          'Connection to the ${eSenseName} lost. Please make sure they are on and try a new connection.';
+      'Connection to the ${eSenseName} lost. Please make sure they are on and try a new connection.';
       _handleAction = (VoidCallback callback) async {
         _deviceConnected = await ESenseManager.connect(eSenseName);
         callback();
@@ -318,7 +336,8 @@ class _MyHomePageState extends State<MyHomePage> {
   List<Widget> getList() {
     List<Widget> listItems = new List<Widget>();
     if (articles != null) {
-      articles.forEach((el) => listItems.add(MyCard(
+      articles.forEach((el) =>
+          listItems.add(MyCard(
             title: el['abstract'],
             text: el['snippet'],
             onOpen: onOpenArticle,
@@ -374,71 +393,78 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             _inArticle
                 ? BackButton(
-                    onPressed: goBackToList,
-                  )
+              onPressed: goBackToList,
+            )
                 : Text(''),
             Text(widget.title),
             !_deviceConnected
                 ? IconButton(
-                    icon: Icon(Icons.audiotrack, color: Colors.white),
-                    onPressed: alertUser)
+                icon: Icon(Icons.audiotrack, color: Colors.white),
+                onPressed: alertUser)
                 : SizedBox.shrink(),
             _deviceConnected
                 ? IconButton(
-                    icon: Icon(Icons.offline_pin, color: Colors.white),
-                    onPressed: () {
-                      sub.cancel();
-                      ESenseManager.disconnect();
-                    })
+                icon: Icon(Icons.offline_pin, color: Colors.white),
+                onPressed: () {
+                  sub.cancel();
+                  ESenseManager.disconnect();
+                })
                 : SizedBox.shrink(), // empty widget
           ],
         ),
       ),
       body: !_inArticle
           ? ListView(
-              padding: const EdgeInsets.all(8),
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: Column(
-                    children: <Widget>[
-                      Text(
-                        'Earables\' status: ${_deviceConnected ? 'connected' : 'not connected'}. Battery level: ${_deviceConnected ? '30%' : '-'}',
-                        style: TextStyle(fontSize: 17),
-                      ),
-                    ],
-                  ),
+        padding: const EdgeInsets.all(8),
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: Column(
+              children: <Widget>[
+                Text(
+                  'Earables\' status: ${_deviceConnected
+                      ? 'connected'
+                      : 'not connected'}. Battery level: ${_deviceConnected
+                      ? '30%'
+                      : '-'}',
+                  style: TextStyle(fontSize: 17),
                 ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 12.0),
-                  child: Divider(
-                    height: 2.0,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12.0),
-                  child: Column(
-                    children: <Widget>[
-                      Text(
-                        'Daily Reads',
-                        style: Theme.of(context).textTheme.headline,
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-                ...getList()
               ],
-            )
-          : SingleChildScrollView(
-              child: MyArticle(article: articles[_currentOpened]),
-              controller: _controller,
             ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12.0),
+            child: Divider(
+              height: 2.0,
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12.0),
+            child: Column(
+              children: <Widget>[
+                Text(
+                  'Daily Reads',
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .headline,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+          ...getList()
+        ],
+      )
+          : SingleChildScrollView(
+        child: MyArticle(article: articles[_currentOpened]),
+        controller: _controller,
+      ),
       floatingActionButton: _inArticle
           ? FloatingActionButton(
-              onPressed: _startReading,
-              tooltip: 'Start Reading',
-              child: Icon(_reading ? Icons.chrome_reader_mode : Icons.book))
+          onPressed: _startReading,
+          tooltip: 'Start Reading',
+          child: Icon(_reading ? Icons.chrome_reader_mode : Icons.book))
           : SizedBox.shrink(),
     );
   }
