@@ -72,6 +72,9 @@ class _MyHomePageState extends State<MyHomePage> {
   Function(VoidCallback) _handleAction;
   String _modalCaller = 'other';
   String _buttonLabel = 'connect';
+  List<List<int>> _gyros = [];
+  List<List<double>> _stableGyros = [];
+  bool _scroll = true;
 
   // User Interaction with App
   void onMark(String title) {
@@ -91,7 +94,7 @@ class _MyHomePageState extends State<MyHomePage> {
   void onOpenArticle(String current) {
     int counter = 0;
     while (
-    counter < articles.length && articles[counter]['abstract'] != current) {
+        counter < articles.length && articles[counter]['abstract'] != current) {
       counter++;
     }
     setState(() {
@@ -193,8 +196,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _getESenseProperties() async {
     // get the battery level every 10 secs
-    Timer.periodic(Duration(seconds: 10),
-            (timer) async => await ESenseManager.getBatteryVoltage());
+    Timer.periodic(Duration(seconds: 10), (timer) async {
+      if (_deviceConnected) {
+        await ESenseManager.getBatteryVoltage();
+      }
+    });
 
     // wait 2, 3, 4, 5, ... secs before getting the name, offset, etc.
     // it seems like the eSense BTLE interface does NOT like to get called
@@ -202,13 +208,13 @@ class _MyHomePageState extends State<MyHomePage> {
     Timer(
         Duration(seconds: 2), () async => await ESenseManager.getDeviceName());
     Timer(Duration(seconds: 3),
-            () async => await ESenseManager.getAccelerometerOffset());
+        () async => await ESenseManager.getAccelerometerOffset());
     Timer(
         Duration(seconds: 4),
-            () async =>
-        await ESenseManager.getAdvertisementAndConnectionInterval());
+        () async =>
+            await ESenseManager.getAdvertisementAndConnectionInterval());
     Timer(Duration(seconds: 5),
-            () async => await ESenseManager.getSensorConfig());
+        () async => await ESenseManager.getSensorConfig());
   }
 
   StreamSubscription subscription;
@@ -216,9 +222,9 @@ class _MyHomePageState extends State<MyHomePage> {
   void _startListenToSensorEvents() async {
     // subscribe to sensor event from the eSense device
     subscription = ESenseManager.sensorEvents.listen((event) {
-      print('SENSOR event: $event');
       setState(() {
         _event = event.toString();
+        _gyros.add(event.gyro);
       });
     });
     setState(() {
@@ -228,8 +234,15 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _pauseListenToSensorEvents() async {
     subscription.cancel();
+    List<double> smoothedGyros = [0, 0, 0];
+    _gyros.forEach((g) {
+      smoothedGyros[0] = smoothedGyros[0] + (g[0] / _gyros.length);
+      smoothedGyros[1] = smoothedGyros[1] + (g[1] / _gyros.length);
+      smoothedGyros[2] = smoothedGyros[2] + (g[2] / _gyros.length);
+    });
     setState(() {
       sampling = false;
+      if (smoothedGyros[0] != 0) _stableGyros.add(smoothedGyros);
     });
   }
 
@@ -243,7 +256,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _title = 'Calibrate';
       _message =
-      'Please hold your head still and in reading position for 5 seconds';
+          'Please hold your head still in reading position for 5 seconds';
       _handleAction = startCalibration;
       _modalCaller = 'calibrator';
       _buttonLabel = 'Calibrate';
@@ -252,18 +265,43 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void startCalibration(VoidCallback callback) {
-    new Timer(const Duration(seconds: 5), () {
-      callback();
-      setState(() {
-        _title = 'Enjoy';
-        _message = 'Head movement will scroll articles up and down.';
-        _handleAction = (VoidCallback callback) {
-          callback();
-        };
-        _modalCaller = 'other';
-        _buttonLabel = null;
+    int counter = 0;
+    Timer.periodic(Duration(milliseconds: 1200), (timer) async {
+      counter++;
+      _startListenToSensorEvents();
+      Timer(Duration(milliseconds: 1100), () {
+        _pauseListenToSensorEvents();
       });
-      alertUser();
+      if (counter >= 5) {
+        print('timer canceled');
+        print(_stableGyros);
+        timer.cancel();
+      }
+    });
+    new Timer(const Duration(seconds: 5), () {
+      if (_stableGyros == []) {
+        setState(() {
+          _title = 'Calibration Problem occured';
+          _message =
+              'Please hold your head still in reading position for 5 seconds AGAIN';
+          _handleAction = startCalibration;
+          _modalCaller = 'calibrator';
+          _buttonLabel = 'Calibrate';
+        });
+        alertUser();
+      } else {
+        callback();
+        setState(() {
+          _title = 'Enjoy';
+          _message = 'Head movement will scroll articles up and down.';
+          _handleAction = (VoidCallback callback) {
+            callback();
+          };
+          _modalCaller = 'other';
+          _buttonLabel = null;
+        });
+        alertUser();
+      }
     });
   }
 
@@ -292,7 +330,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _title = 'Connection lost';
       _message =
-      'Connection to the ${eSenseName} lost. Please make sure they are on and try a new connection.';
+          'Connection to the ${eSenseName} lost. Please make sure they are on and try a new connection.';
       _handleAction = (VoidCallback callback) async {
         _deviceConnected = await ESenseManager.connect(eSenseName);
         callback();
@@ -307,16 +345,16 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // Scroll actions on head movement event listened
   void scrollDown() {
-    if (_inArticle && _reading) {
-      double offset = _controller.offset + 500.0;
+    if (_inArticle && _scroll) {
+      double offset = _controller.offset + 300.0;
       _controller.animateTo(offset,
           duration: Duration(seconds: 1), curve: Curves.easeInOut);
     }
   }
 
   void scrollUp() {
-    if (_inArticle && _reading) {
-      double offset = _controller.offset - 500.0;
+    if (_inArticle && _scroll) {
+      double offset = _controller.offset - 300.0;
       if (offset < 0) {
         offset = 0.0;
       }
@@ -330,14 +368,88 @@ class _MyHomePageState extends State<MyHomePage> {
       _inArticle = true;
       _reading = !_reading;
     });
+    if (_reading) {
+      int times = 0;
+      List<int> gyZ = [];
+      subscription = ESenseManager.sensorEvents.listen((event) {
+        setState(() {
+          _event = event.toString();
+          gyZ.add(event.gyro[2]);
+          times++;
+          if (times >= 10) {
+            double mean = 0;
+            gyZ.forEach((n) {
+              mean += n / gyZ.length;
+            });
+            if (mean > _stableGyros[0][2] + 500) {
+              scrollUp();
+              print('up');
+              print(mean);
+              disableScroll();
+            } else if (mean < _stableGyros[0][2] - 500) {
+              scrollDown();
+              print('down');
+              print(mean);
+              disableScroll();
+            }
+            times = 0;
+            gyZ = [];
+          }
+        });
+      });
+      /*Timer.periodic(Duration(milliseconds: 1000), (timer) async {
+        if (!_reading) {
+          timer.cancel();
+        }
+        List<int> gyZ = [];
+        subscription = ESenseManager.sensorEvents.listen((event) {
+          setState(() {
+            _event = event.toString();
+            gyZ.add(event.gyro[2]);
+          });
+        });
+        Timer(Duration(milliseconds: 800), () async {
+          subscription.cancel();
+          double mean = 0;
+          gyZ.forEach((z) {
+            mean = mean + z / gyZ.length;
+          });
+          print(_stableGyros[0][2]);
+          print(mean);*/
+      /*if (mean - 250 < _stableGyros[0][2]) {
+            scrollUp();
+          } else if (mean + 250 < _stableGyros[0][2]) {
+            scrollDown();
+          }*/
+      /*
+          print(mean);
+          print(_stableGyros);
+        });
+      });
+
+           */
+
+    } else {
+      subscription.cancel();
+    }
+  }
+
+  void disableScroll() {
+    setState(() {
+      _scroll = false;
+    });
+    Timer(Duration(milliseconds: 2000), () {
+      setState(() {
+        _scroll = true;
+      });
+    });
   }
 
   // rendeing utils
   List<Widget> getList() {
     List<Widget> listItems = new List<Widget>();
     if (articles != null) {
-      articles.forEach((el) =>
-          listItems.add(MyCard(
+      articles.forEach((el) => listItems.add(MyCard(
             title: el['abstract'],
             text: el['snippet'],
             onOpen: onOpenArticle,
@@ -393,78 +505,76 @@ class _MyHomePageState extends State<MyHomePage> {
           children: <Widget>[
             _inArticle
                 ? BackButton(
-              onPressed: goBackToList,
-            )
+                    onPressed: goBackToList,
+                  )
                 : Text(''),
             Text(widget.title),
             !_deviceConnected
                 ? IconButton(
-                icon: Icon(Icons.audiotrack, color: Colors.white),
-                onPressed: alertUser)
+                    icon: Icon(Icons.audiotrack, color: Colors.white),
+                    onPressed: alertUser)
                 : SizedBox.shrink(),
             _deviceConnected
                 ? IconButton(
-                icon: Icon(Icons.offline_pin, color: Colors.white),
-                onPressed: () {
-                  sub.cancel();
-                  ESenseManager.disconnect();
-                })
+                    icon: Icon(Icons.offline_pin, color: Colors.white),
+                    onPressed: () {
+                      setState(() {
+                        _reading = false;
+                        _stableGyros = [];
+                        _deviceConnected = false;
+                      });
+                      sub.cancel();
+                      ESenseManager.disconnect();
+                    })
                 : SizedBox.shrink(), // empty widget
           ],
         ),
       ),
       body: !_inArticle
           ? ListView(
-        padding: const EdgeInsets.all(8),
-        children: [
-          Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: Column(
-              children: <Widget>[
-                Text(
-                  'Earables\' status: ${_deviceConnected
-                      ? 'connected'
-                      : 'not connected'}. Battery level: ${_deviceConnected
-                      ? '30%'
-                      : '-'}',
-                  style: TextStyle(fontSize: 17),
+              padding: const EdgeInsets.all(8),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: Column(
+                    children: <Widget>[
+                      Text(
+                        'Earables\' status: ${_deviceConnected ? 'connected' : 'not connected'}. Battery level: ${_deviceConnected ? '30%' : '-'}',
+                        style: TextStyle(fontSize: 17),
+                      ),
+                    ],
+                  ),
                 ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 12.0),
-            child: Divider(
-              height: 2.0,
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.only(bottom: 12.0),
-            child: Column(
-              children: <Widget>[
-                Text(
-                  'Daily Reads',
-                  style: Theme
-                      .of(context)
-                      .textTheme
-                      .headline,
-                  textAlign: TextAlign.center,
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 12.0),
+                  child: Divider(
+                    height: 2.0,
+                  ),
                 ),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12.0),
+                  child: Column(
+                    children: <Widget>[
+                      Text(
+                        'Daily Reads',
+                        style: Theme.of(context).textTheme.headline,
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
+                  ),
+                ),
+                ...getList()
               ],
-            ),
-          ),
-          ...getList()
-        ],
-      )
+            )
           : SingleChildScrollView(
-        child: MyArticle(article: articles[_currentOpened]),
-        controller: _controller,
-      ),
+              child: MyArticle(article: articles[_currentOpened]),
+              controller: _controller,
+            ),
       floatingActionButton: _inArticle
           ? FloatingActionButton(
-          onPressed: _startReading,
-          tooltip: 'Start Reading',
-          child: Icon(_reading ? Icons.chrome_reader_mode : Icons.book))
+              onPressed: _startReading,
+              tooltip: 'Start Reading',
+              child: Icon(_reading ? Icons.chrome_reader_mode : Icons.book))
           : SizedBox.shrink(),
     );
   }
