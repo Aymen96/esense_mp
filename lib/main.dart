@@ -66,7 +66,7 @@ class _MyHomePageState extends State<MyHomePage> {
   bool _deviceConnected = false;
 
   // Dialog modal data
-  Icon _icon;
+  IconData _icon = Icons.warning;
   String _title;
   String _message;
   Function(VoidCallback) _handleAction;
@@ -246,6 +246,7 @@ class _MyHomePageState extends State<MyHomePage> {
       _handleAction = startCalibration;
       _modalCaller = 'calibrator';
       _buttonLabel = 'Calibrate';
+      _icon = Icons.hearing;
     });
     alertUser();
   }
@@ -273,6 +274,7 @@ class _MyHomePageState extends State<MyHomePage> {
           _handleAction = startCalibration;
           _modalCaller = 'calibrator';
           _buttonLabel = 'Calibrate';
+          _icon = Icons.sentiment_dissatisfied;
         });
         alertUser();
       } else {
@@ -285,6 +287,7 @@ class _MyHomePageState extends State<MyHomePage> {
           };
           _modalCaller = 'other';
           _buttonLabel = null;
+          _icon = Icons.sentiment_very_satisfied;
         });
         alertUser();
       }
@@ -299,13 +302,15 @@ class _MyHomePageState extends State<MyHomePage> {
   retryConnection() {
     setState(() {
       _title = 'Device not found';
-      _message = 'Make sure your earables are on and retry again.';
+      _message =
+          'Make sure your earables & bluetooth on your phone are on and retry again.';
       _handleAction = (VoidCallback callback) async {
         _deviceConnected = await ESenseManager.connect(eSenseName);
         callback();
       };
       _buttonLabel = 'Retry';
       _deviceConnected = false;
+      _icon = Icons.headset_off;
     });
     if (sampling) _pauseListenToSensorEvents();
     ESenseManager.disconnect();
@@ -323,6 +328,7 @@ class _MyHomePageState extends State<MyHomePage> {
       };
       _buttonLabel = 'connect';
       _deviceConnected = false;
+      _icon = Icons.warning;
     });
     if (sampling) _pauseListenToSensorEvents();
     ESenseManager.disconnect();
@@ -433,7 +439,8 @@ class _MyHomePageState extends State<MyHomePage> {
                     });
                   },
                   clicked: _clicked,
-                  buttonLabel: _buttonLabel);
+                  buttonLabel: _buttonLabel,
+                  customIcon: _icon);
             },
           );
         });
@@ -445,7 +452,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _title = "Make connection";
       _message = "Please connect to your eSense Earables.";
-      _icon = Icon(Icons.audiotrack);
+      _icon = Icons.headset;
       _handleAction = makeConnection;
     });
     WidgetsBinding.instance.addPostFrameCallback((_) => alertUser());
@@ -465,12 +472,12 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(widget.title),
             !_deviceConnected
                 ? IconButton(
-                    icon: Icon(Icons.audiotrack, color: Colors.white),
+                    icon: Icon(Icons.headset, color: Colors.white),
                     onPressed: alertUser)
                 : emptyWidget,
             _deviceConnected
                 ? IconButton(
-                    icon: Icon(Icons.offline_pin, color: Colors.white),
+                    icon: Icon(Icons.not_interested, color: Colors.white),
                     onPressed: () {
                       setState(() {
                         _reading = false;

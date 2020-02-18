@@ -13,18 +13,19 @@ class CustomDialog extends StatelessWidget {
   final Function(VoidCallback) handleAction;
   final bool clicked;
   final VoidCallback onClick;
+  final IconData customIcon;
 
-  CustomDialog({
-    this.title,
-    this.description,
-    this.buttonText,
-    this.image,
-    this.handleAction,
-    this.caller,
-    this.onClick,
-    this.clicked,
-    this.buttonLabel,
-  });
+  CustomDialog(
+      {this.title,
+      this.description,
+      this.buttonText,
+      this.image,
+      this.handleAction,
+      this.caller,
+      this.onClick,
+      this.clicked,
+      this.buttonLabel,
+      this.customIcon});
 
   dialogContent(BuildContext context) {
     return Stack(
@@ -91,7 +92,7 @@ class CustomDialog extends StatelessWidget {
           child: CircleAvatar(
             backgroundColor: Colors.green,
             radius: Consts.avatarRadius,
-            child: Icon(Icons.error_outline, size: 90.0, color: Colors.white),
+            child: Icon(this.customIcon, size: 90.0, color: Colors.white),
           ),
         ),
       ],
