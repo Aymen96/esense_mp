@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:math';
 
 import 'package:esense_flutter/esense.dart';
 import 'package:http/http.dart';
@@ -11,6 +10,7 @@ import './widgets/my_article.dart';
 import './widgets/my_dialog.dart';
 
 var articles;
+const emptyWidget = SizedBox.shrink();
 
 void main() async {
   // Get articles for the chosen news API
@@ -138,17 +138,14 @@ class _MyHomePageState extends State<MyHomePage> {
             _deviceStatus = 'disconnected';
             _deviceConnected = false;
             alertConnectionLoss();
-
             break;
           case ConnectionType.device_found:
             _deviceStatus = 'device_found';
-
             break;
           case ConnectionType.device_not_found:
             _deviceStatus = 'device_not_found';
             _deviceConnected = false;
             retryConnection();
-
             break;
         }
       });
@@ -175,17 +172,6 @@ class _MyHomePageState extends State<MyHomePage> {
             _button = (event as ButtonEventChanged).pressed
                 ? 'pressed'
                 : 'not pressed';
-            break;
-          case AccelerometerOffsetRead:
-          // TODO
-
-            break;
-          case AdvertisementAndConnectionIntervalRead:
-          // TODO
-            break;
-          case SensorConfigRead:
-          // TODO
-
             break;
         }
       });
@@ -397,38 +383,6 @@ class _MyHomePageState extends State<MyHomePage> {
           }
         });
       });
-      /*Timer.periodic(Duration(milliseconds: 1000), (timer) async {
-        if (!_reading) {
-          timer.cancel();
-        }
-        List<int> gyZ = [];
-        subscription = ESenseManager.sensorEvents.listen((event) {
-          setState(() {
-            _event = event.toString();
-            gyZ.add(event.gyro[2]);
-          });
-        });
-        Timer(Duration(milliseconds: 800), () async {
-          subscription.cancel();
-          double mean = 0;
-          gyZ.forEach((z) {
-            mean = mean + z / gyZ.length;
-          });
-          print(_stableGyros[0][2]);
-          print(mean);*/
-      /*if (mean - 250 < _stableGyros[0][2]) {
-            scrollUp();
-          } else if (mean + 250 < _stableGyros[0][2]) {
-            scrollDown();
-          }*/
-      /*
-          print(mean);
-          print(_stableGyros);
-        });
-      });
-
-           */
-
     } else {
       subscription.cancel();
     }
@@ -445,7 +399,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // rendeing utils
+  // rendering utils
   List<Widget> getList() {
     List<Widget> listItems = new List<Widget>();
     if (articles != null) {
@@ -507,13 +461,13 @@ class _MyHomePageState extends State<MyHomePage> {
                 ? BackButton(
                     onPressed: goBackToList,
                   )
-                : Text(''),
+                : emptyWidget,
             Text(widget.title),
             !_deviceConnected
                 ? IconButton(
                     icon: Icon(Icons.audiotrack, color: Colors.white),
                     onPressed: alertUser)
-                : SizedBox.shrink(),
+                : emptyWidget,
             _deviceConnected
                 ? IconButton(
                     icon: Icon(Icons.offline_pin, color: Colors.white),
@@ -526,7 +480,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       sub.cancel();
                       ESenseManager.disconnect();
                     })
-                : SizedBox.shrink(), // empty widget
+                : emptyWidget, // empty widget
           ],
         ),
       ),
@@ -575,7 +529,7 @@ class _MyHomePageState extends State<MyHomePage> {
               onPressed: _startReading,
               tooltip: 'Start Reading',
               child: Icon(_reading ? Icons.chrome_reader_mode : Icons.book))
-          : SizedBox.shrink(),
+          : emptyWidget,
     );
   }
 }
