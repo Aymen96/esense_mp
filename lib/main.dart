@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:esense_flutter/esense.dart';
+import 'package:esense_mp/normal.dart';
 import 'package:http/http.dart';
 import 'package:flutter/material.dart';
 
@@ -75,6 +77,11 @@ class _MyHomePageState extends State<MyHomePage> {
   List<List<int>> _gyros = [];
   List<List<double>> _stableGyros = [];
   bool _scroll = true;
+  List<int> _forCalib = [];
+
+  // new
+  double _mean;
+  double _variance;
 
   // User Interaction with App
   void onMark(String title) {
@@ -211,6 +218,7 @@ class _MyHomePageState extends State<MyHomePage> {
       setState(() {
         _event = event.toString();
         _gyros.add(event.gyro);
+        _forCalib.add(event.gyro[2]);
       });
     });
     setState(() {
@@ -266,7 +274,7 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
     new Timer(const Duration(seconds: 5), () {
-      if (_stableGyros == []) {
+      if (_stableGyros.length == 0) {
         setState(() {
           _title = 'Calibration Problem occured';
           _message =
@@ -280,6 +288,8 @@ class _MyHomePageState extends State<MyHomePage> {
       } else {
         callback();
         setState(() {
+          _mean = getMean(_forCalib);
+          _variance = getVariance(_forCalib);
           _title = 'Enjoy';
           _message = 'Head movement will scroll articles up and down.';
           _handleAction = (VoidCallback callback) {
@@ -367,21 +377,21 @@ class _MyHomePageState extends State<MyHomePage> {
         setState(() {
           _event = event.toString();
           gyZ.add(event.gyro[2]);
+
           times++;
-          if (times >= 10) {
+          if (times >= 5) {
             double mean = 0;
             gyZ.forEach((n) {
               mean += n / gyZ.length;
             });
-            if (mean > _stableGyros[0][2] + 500) {
+            double pdf = getPdf(mean, _variance, _mean);
+            if (mean > _stableGyros[0][2] + 300 && pdf < 1e-6) {
+              print(pdf);
               scrollUp();
-              print('up');
-              print(mean);
               disableScroll();
-            } else if (mean < _stableGyros[0][2] - 500) {
+            } else if (mean < _stableGyros[0][2] - 300 && pdf < 1e-6) {
+              print(pdf);
               scrollDown();
-              print('down');
-              print(mean);
               disableScroll();
             }
             times = 0;
@@ -405,7 +415,7 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
-  // rendering utils
+// rendering utils
   List<Widget> getList() {
     List<Widget> listItems = new List<Widget>();
     if (articles != null) {
