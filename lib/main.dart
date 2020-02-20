@@ -55,7 +55,6 @@ class _MyHomePageState extends State<MyHomePage> {
 
   // TODO: look into this
   String _deviceName = 'Unknown';
-  double _voltage = -1;
   String _deviceStatus = '';
   bool sampling = false;
   String _event = '';
@@ -111,10 +110,12 @@ class _MyHomePageState extends State<MyHomePage> {
     });
   }
 
+  StreamSubscription<ConnectionEvent> a;
+
   // eSense earables urils
   Future<void> _connectToESense() async {
     // if you want to get the connection events when connecting, set up the listener BEFORE connecting...
-    ESenseManager.connectionEvents.listen((event) {
+    a = ESenseManager.connectionEvents.listen((event) {
       print('CONNECTION event: $event');
 
       // when we're connected to the eSense device, we can start listening to events from it
@@ -164,9 +165,6 @@ class _MyHomePageState extends State<MyHomePage> {
         switch (event.runtimeType) {
           case DeviceNameRead:
             _deviceName = (event as DeviceNameRead).deviceName;
-            break;
-          case BatteryRead:
-            _voltage = (event as BatteryRead).voltage;
             break;
           case ButtonEventChanged:
             _button = (event as ButtonEventChanged).pressed
@@ -234,6 +232,8 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void dispose() {
     if (sampling) _pauseListenToSensorEvents();
+    a.cancel();
+    sub.cancel();
     ESenseManager.disconnect();
     super.dispose();
   }
@@ -252,6 +252,12 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void startCalibration(VoidCallback callback) {
+    if (sampling) subscription.cancel();
+    setState(() {
+      sampling = false;
+      _gyros = [];
+      _stableGyros = [];
+    });
     int counter = 0;
     Timer.periodic(Duration(milliseconds: 1200), (timer) async {
       counter++;
@@ -266,14 +272,17 @@ class _MyHomePageState extends State<MyHomePage> {
       }
     });
     new Timer(const Duration(seconds: 5), () {
-      if (_stableGyros == []) {
+      if (_stableGyros.length == 0) {
+        callback();
         setState(() {
-          _title = 'Calibration Problem occured';
+          _title = 'Calibration Problem';
           _message =
-              'Please hold your head still in reading position for 5 seconds AGAIN';
-          _handleAction = startCalibration;
+              'Restart the app for this matter. This is actually easy to solve. I just figured it out late and I didn\'t want to mess up the app just before presentation ..';
+          _handleAction = (VoidCallback callback) {
+            callback();
+          };
           _modalCaller = 'calibrator';
-          _buttonLabel = 'Calibrate';
+          _buttonLabel = 'Close';
           _icon = Icons.sentiment_dissatisfied;
         });
         alertUser();
@@ -305,15 +314,22 @@ class _MyHomePageState extends State<MyHomePage> {
       _message =
           'Make sure your earables & bluetooth on your phone are on and retry again.';
       _handleAction = (VoidCallback callback) async {
-        _deviceConnected = await ESenseManager.connect(eSenseName);
+        a.cancel();
+        _connectToESense();
         callback();
       };
       _buttonLabel = 'Retry';
       _deviceConnected = false;
       _icon = Icons.headset_off;
+      _reading = false;
+      _gyros = [];
+      _stableGyros = [];
+      _scroll = true;
+      _deviceConnected = false;
     });
-    if (sampling) _pauseListenToSensorEvents();
+    if (sampling) subscription.cancel();
     ESenseManager.disconnect();
+    a.cancel();
     alertUser();
   }
 
@@ -323,14 +339,17 @@ class _MyHomePageState extends State<MyHomePage> {
       _message =
           'Connection to the ${eSenseName} lost. Please make sure they are on and try a new connection.';
       _handleAction = (VoidCallback callback) async {
-        _deviceConnected = await ESenseManager.connect(eSenseName);
+        a.cancel();
+        _connectToESense();
         callback();
       };
       _buttonLabel = 'connect';
       _deviceConnected = false;
       _icon = Icons.warning;
     });
-    if (sampling) _pauseListenToSensorEvents();
+    if (sampling) subscription.cancel();
+    sub.cancel();
+    a.cancel();
     ESenseManager.disconnect();
     alertUser();
   }
@@ -365,6 +384,7 @@ class _MyHomePageState extends State<MyHomePage> {
       List<int> gyZ = [];
       subscription = ESenseManager.sensorEvents.listen((event) {
         setState(() {
+          sampling = true;
           _event = event.toString();
           gyZ.add(event.gyro[2]);
           times++;
@@ -375,13 +395,9 @@ class _MyHomePageState extends State<MyHomePage> {
             });
             if (mean > _stableGyros[0][2] + 500) {
               scrollUp();
-              print('up');
-              print(mean);
               disableScroll();
             } else if (mean < _stableGyros[0][2] - 500) {
               scrollDown();
-              print('down');
-              print(mean);
               disableScroll();
             }
             times = 0;
@@ -398,7 +414,7 @@ class _MyHomePageState extends State<MyHomePage> {
     setState(() {
       _scroll = false;
     });
-    Timer(Duration(milliseconds: 2000), () {
+    Timer(Duration(milliseconds: 5000), () {
       setState(() {
         _scroll = true;
       });
@@ -481,9 +497,17 @@ class _MyHomePageState extends State<MyHomePage> {
                     onPressed: () {
                       setState(() {
                         _reading = false;
+                        _gyros = [];
                         _stableGyros = [];
+                        _scroll = true;
                         _deviceConnected = false;
                       });
+                      if (sampling) {
+                        subscription.cancel();
+                        setState(() {
+                          sampling = false;
+                        });
+                      }
                       sub.cancel();
                       ESenseManager.disconnect();
                     })
@@ -500,7 +524,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   child: Column(
                     children: <Widget>[
                       Text(
-                        'Earables\' status: ${_deviceConnected ? 'connected' : 'not connected'}. Battery level: ${_deviceConnected ? '30%' : '-'}',
+                        'Earables\' status: ${_deviceConnected ? 'connected' : 'not connected'}.',
                         style: TextStyle(fontSize: 17),
                       ),
                     ],
