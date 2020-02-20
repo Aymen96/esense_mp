@@ -1,4 +1,4 @@
-# esense_mp
+# esense_mp: The Esense Reader
 
 A flutter app that displays different articles from the New York Times API and allows the reader to scroll up and down using the esense earables provided from the university institut.
 
